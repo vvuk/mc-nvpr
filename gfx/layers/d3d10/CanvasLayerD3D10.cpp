@@ -11,6 +11,7 @@
 #include "gfxWindowsPlatform.h"
 #include "SurfaceStream.h"
 #include "SharedSurfaceANGLE.h"
+#include "SharedSurfaceD3D10Interop.h"
 #include "gfxContext.h"
 #include "GLContext.h"
 
@@ -59,9 +60,19 @@ CanvasLayerD3D10::Initialize(const Data& aData)
 
     SurfaceFactory_GL* factory = nullptr;
     if (!mForceReadback) {
-      factory = SurfaceFactory_ANGLEShareHandle::Create(mGLContext,
-                                                        device(),
-                                                        screen->Caps());
+      if (mGLContext->IsANGLE()) {
+        factory = SurfaceFactory_ANGLEShareHandle::Create(mGLContext,
+                                                          device(),
+                                                          screen->Caps());
+      } else {
+        // Instead of worrying about coming in and out of Lock, just
+        // pretend we're OMTC for the purpose of buffering selection.
+        streamType = SurfaceStream::ChooseGLStreamType(SurfaceStream::OffMainThread,
+                                                       screen->PreserveBuffer());
+        factory = SurfaceFactory_D3D10Interop::Create(mGLContext,
+                                                      device(),
+                                                      screen->Caps());
+      }
     }
 
     if (factory) {
@@ -86,7 +97,8 @@ CanvasLayerD3D10::Initialize(const Data& aData)
     
     // XXX we should store mDrawTarget and use it directly in UpdateSurface,
     // bypassing Thebes
-    mSurface = gfxPlatform::GetPlatform()->GetThebesSurfaceForDrawTarget(mDrawTarget);
+    if (mDrawTarget->GetType() != BACKEND_NVPR)
+      mSurface = gfxPlatform::GetPlatform()->GetThebesSurfaceForDrawTarget(mDrawTarget);
   } else {
     NS_ERROR("CanvasLayer created without mSurface, mDrawTarget or mGLContext?");
   }
@@ -147,6 +159,13 @@ CanvasLayerD3D10::UpdateSurface()
         mSRView = shareSurf->GetSRV();
         return;
       }
+      case SharedSurfaceType::DXGLInterop2: {
+        printf_stderr("D3D10.UpdateSurface from DXGLInterop2.\n");
+        SharedSurface_D3D10Interop* shareSurf = SharedSurface_D3D10Interop::Cast(surf);
+
+        mSRView = shareSurf->GetSRV();
+        return;
+      }
       case SharedSurfaceType::Basic: {
         SharedSurface_Basic* shareSurf = SharedSurface_Basic::Cast(surf);
         // WebGL reads entire surface.
@@ -184,7 +203,7 @@ CanvasLayerD3D10::UpdateSurface()
       default:
         MOZ_CRASH("Unhandled SharedSurfaceType.");
     }
-  } else if (mSurface) {
+  } else if (mSurface || mDrawTarget) {
     RECT r;
     r.left = 0;
     r.top = 0;
@@ -199,15 +218,19 @@ CanvasLayerD3D10::UpdateSurface()
       return;
     }
 
-    nsRefPtr<gfxImageSurface> dstSurface;
+    nsRefPtr<gfxASurface> srcSurface = mSurface;
+    if (!srcSurface) {
+      srcSurface = gfxPlatform::GetPlatform()->GetThebesSurfaceForDrawTarget(mDrawTarget);
+    }
 
+    nsRefPtr<gfxImageSurface> dstSurface;
     dstSurface = new gfxImageSurface((unsigned char*)map.pData,
                                      gfxIntSize(mBounds.width, mBounds.height),
                                      map.RowPitch,
                                      gfxImageFormatARGB32);
     nsRefPtr<gfxContext> ctx = new gfxContext(dstSurface);
     ctx->SetOperator(gfxContext::OPERATOR_SOURCE);
-    ctx->SetSource(mSurface);
+    ctx->SetSource(srcSurface);
     ctx->Paint();
     
     mTexture->Unmap(0);

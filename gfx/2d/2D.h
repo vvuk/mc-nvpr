@@ -23,9 +23,7 @@
 // solution.
 #include "mozilla/RefPtr.h"
 
-#ifdef MOZ_ENABLE_FREETYPE
 #include <string>
-#endif
 
 struct _cairo_surface;
 typedef _cairo_surface cairo_surface_t;
@@ -527,7 +525,6 @@ protected:
   UserData mUserData;
 };
 
-#ifdef MOZ_ENABLE_FREETYPE
 /**
  * Describes a font
  * Used to pass the key informatin from a gfxFont into Azure
@@ -538,8 +535,6 @@ struct FontOptions
   std::string mName;
   FontStyle mStyle;
 };
-#endif
-
 
 /* This class is designed to allow passing additional glyph rendering
  * parameters to the glyph drawing functions. This is an empty wrapper class

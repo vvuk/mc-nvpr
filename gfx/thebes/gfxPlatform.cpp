@@ -274,7 +274,7 @@ gfxPlatform::gfxPlatform()
                                  "layers.draw-bigimage-borders",
                                  false);
 
-    uint32_t canvasMask = (1 << BACKEND_CAIRO) | (1 << BACKEND_SKIA);
+    uint32_t canvasMask = (1 << BACKEND_CAIRO) | (1 << BACKEND_SKIA) | (1 << BACKEND_NVPR);
     uint32_t contentMask = 1 << BACKEND_CAIRO;
     InitBackendPrefs(canvasMask, contentMask);
 }
@@ -913,6 +913,8 @@ gfxPlatform::BackendTypeForName(const nsCString& aName)
     return BACKEND_DIRECT2D;
   if (aName.EqualsLiteral("cg"))
     return BACKEND_COREGRAPHICS;
+  if (aName.EqualsLiteral("nvpr"))
+    return BACKEND_NVPR;
   return BACKEND_NONE;
 }
 

@@ -506,8 +506,8 @@ gfxWindowsPlatform::UpdateRenderMode()
     }
 #endif
 
-    uint32_t canvasMask = 1 << BACKEND_CAIRO;
-    uint32_t contentMask = 1 << BACKEND_CAIRO;
+    uint32_t canvasMask = 1 << BACKEND_CAIRO | 1 << BACKEND_NVPR;
+    uint32_t contentMask = 1 << BACKEND_CAIRO | 1 << BACKEND_NVPR;
     if (mRenderMode == RENDER_DIRECT2D) {
       canvasMask |= 1 << BACKEND_DIRECT2D;
       contentMask |= 1 << BACKEND_DIRECT2D;
@@ -1555,11 +1555,60 @@ gfxWindowsPlatform::GetDXGIAdapter()
       return nullptr;
     }
 
-    hr = factory1->EnumAdapters1(0, byRef(mAdapter));
-    if (FAILED(hr)) {
+    static const int max_adapters = 10;
+    int num_adapters = 0;
+    mozilla::RefPtr<IDXGIAdapter1> adapters[max_adapters];
+
+    for (int i = 0; i < max_adapters; ++i) {
+      hr = factory1->EnumAdapters1(i, byRef(adapters[i]));
+      if (FAILED(hr)) {
+        adapters[i] = nullptr;
+      } else {
+        num_adapters++;
+      }
+    }
+
+    if (num_adapters == 0) {
       // We should return and not accelerate if we can't obtain
       // an adapter.
       return nullptr;
+    }
+
+    if (num_adapters == 1) {
+      for (int i = 0; i < max_adapters; ++i) {
+        if (adapters[i]) {
+          mAdapter = adapters[i];
+        }
+      }
+    } else {
+      // > 1
+      DXGI_ADAPTER_DESC desc;
+      int first_index = -1, intel_index = -1, nvidia_index = -1;
+      for (int i = 0; i < max_adapters; ++i) {
+        if (!adapters[i])
+          continue;
+        if (first_index == -1)
+          first_index = i;
+
+        hr = adapters[i]->GetDesc(&desc);
+        if (FAILED(hr))
+          continue;
+        if (desc.VendorId == 0x8086 /* Intel */ && intel_index == -1) {
+          intel_index = i;
+        } else if (desc.VendorId == 0x10de /* NVIDIA */) {
+          nvidia_index = i;
+        }
+
+        printf_stderr("Found adapter %d -- %S 0x%04x 0x%04x 0x%04x 0x%04x (0x%08x dedicated, 0x%08x system, 0x%08x shared)\n",
+                      i, desc.Description, desc.VendorId, desc.DeviceId, desc.SubSysId, desc.Revision,
+                      desc.DedicatedVideoMemory, desc.DedicatedSystemMemory, desc.SharedSystemMemory);
+      }
+
+      if (nvidia_index >= 0) {
+        mAdapter = adapters[nvidia_index];
+      } else {
+        mAdapter = adapters[first_index];
+      }
     }
   }
 

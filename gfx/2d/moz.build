@@ -80,7 +80,21 @@ if CONFIG['INTEL_ARCHITECTURE']:
         ]
 
 CPP_SOURCES += [
+    'DrawTargetNVpr.cpp',
+    'GradientStopsNVpr.cpp',
+    'PathBuilderNVpr.cpp',
+    'PathNVpr.cpp',
+    'ScaledFontNVpr.cpp',
+    'SourceSurfaceNVpr.cpp',
+    # these are in nvpr/ -- we VPATH them in
+    'Clip.cpp',
+    'GL.cpp',
+    'WGL.cpp',
+]
+
+CPP_SOURCES += [
     'Blur.cpp',
+    'ConvexPolygon.cpp',
     'DrawEventRecorder.cpp',
     'DrawTargetCairo.cpp',
     'DrawTargetDual.cpp',
@@ -91,6 +105,7 @@ CPP_SOURCES += [
     'PathCairo.cpp',
     'PathRecording.cpp',
     'RecordedEvent.cpp',
+    'Rect.cpp',
     'Scale.cpp',
     'ScaledFontBase.cpp',
     'ScaledFontCairo.cpp',

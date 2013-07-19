@@ -30,6 +30,14 @@
 namespace mozilla {
 namespace gfx {
 
+inline static ostream&
+operator <<(ostream& aStream, const DrawTargetSkia& aDrawTarget)
+{
+  aStream << "DrawTargetSkia(" << &aDrawTarget << ")";
+  return aStream;
+}
+
+
 class GradientStopsSkia : public GradientStops
 {
 public:
