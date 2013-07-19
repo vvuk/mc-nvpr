@@ -143,6 +143,8 @@ GetBackendName(mozilla::gfx::BackendType aBackend)
         return "recording";
       case mozilla::gfx::BACKEND_DIRECT2D1_1:
         return "direct2d 1.1";
+      case mozilla::gfx::BACKEND_NVPR:
+        return "nvpr";
       case mozilla::gfx::BACKEND_NONE:
         return "none";
   }
