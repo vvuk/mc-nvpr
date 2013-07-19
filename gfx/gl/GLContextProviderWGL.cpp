@@ -161,6 +161,8 @@ WGLLibrary::EnsureInitialized(bool aUseMesaLlvmPipe)
 
     // Now we can grab all the other symbols that we couldn't without having
     // a context current.
+    GLLibraryLoader::PlatformLookupFunction lookupFunc =
+        (GLLibraryLoader::PlatformLookupFunction)fGetProcAddress;
 
     GLLibraryLoader::SymLoadStruct pbufferSymbols[] = {
         { (PRFuncPtr*) &fCreatePbuffer, { "wglCreatePbufferARB", "wglCreatePbufferEXT", nullptr } },
@@ -177,16 +179,12 @@ WGLLibrary::EnsureInitialized(bool aUseMesaLlvmPipe)
         { nullptr, { nullptr } }
     };
 
-    if (!GLLibraryLoader::LoadSymbols(mOGLLibrary, &pbufferSymbols[0],
-         (GLLibraryLoader::PlatformLookupFunction)fGetProcAddress))
-    {
+    if (!GLLibraryLoader::LoadSymbols(mOGLLibrary, &pbufferSymbols[0], lookupFunc)) {
         // this isn't an error, just means that pbuffers aren't supported
         fCreatePbuffer = nullptr;
     }
 
-    if (!GLLibraryLoader::LoadSymbols(mOGLLibrary, &pixFmtSymbols[0],
-         (GLLibraryLoader::PlatformLookupFunction)fGetProcAddress))
-    {
+    if (!GLLibraryLoader::LoadSymbols(mOGLLibrary, &pixFmtSymbols[0], lookupFunc)) {
         // this isn't an error, just means that we don't have the pixel format extension
         fChoosePixelFormat = nullptr;
     }
@@ -201,14 +199,48 @@ WGLLibrary::EnsureInitialized(bool aUseMesaLlvmPipe)
         { nullptr, { nullptr } }
     };
 
-    if (GLLibraryLoader::LoadSymbols(mOGLLibrary, &extensionsSymbols[0],
-        (GLLibraryLoader::PlatformLookupFunction)fGetProcAddress)) {
-        const char *wglExts = fGetExtensionsString(mWindowDC);
-        if (wglExts && HasExtension(wglExts, "WGL_ARB_create_context")) {
-            GLLibraryLoader::LoadSymbols(mOGLLibrary, &robustnessSymbols[0],
-            (GLLibraryLoader::PlatformLookupFunction)fGetProcAddress);
-            if (HasExtension(wglExts, "WGL_ARB_create_context_robustness")) {
-                mHasRobustness = true;
+    GLLibraryLoader::SymLoadStruct dxInteropSymbols[] = {
+        { (PRFuncPtr *) &fDXSetResourceShareHandle, { "wglDXSetResourceShareHandleNV", NULL} },
+        { (PRFuncPtr *) &fDXOpenDevice,             { "wglDXOpenDeviceNV"            , NULL} },
+        { (PRFuncPtr *) &fDXCloseDevice,            { "wglDXCloseDeviceNV"           , NULL} },
+        { (PRFuncPtr *) &fDXRegisterObject,         { "wglDXRegisterObjectNV"        , NULL} },
+        { (PRFuncPtr *) &fDXUnregisterObject,       { "wglDXUnregisterObjectNV"      , NULL} },
+        { (PRFuncPtr *) &fDXObjectAccess,           { "wglDXObjectAccessNV"          , NULL} },
+        { (PRFuncPtr *) &fDXLockObjects,            { "wglDXLockObjectsNV"           , NULL} },
+        { (PRFuncPtr *) &fDXUnlockObjects,          { "wglDXUnlockObjectsNV"         , NULL} },
+        { NULL, { NULL } }
+    };
+
+    if (GLLibraryLoader::LoadSymbols(mOGLLibrary, &extensionsSymbols[0], lookupFunc)) {
+        const char* extString = fGetExtensionsString(mWindowDC);
+        MOZ_ASSERT(extString);
+        MOZ_ASSERT(HasExtension(extString, "WGL_ARB_extensions_string"));
+
+        if (HasExtension(extString, "WGL_ARB_create_context")) {
+            if (GLLibraryLoader::LoadSymbols(mOGLLibrary, &robustnessSymbols[0], lookupFunc)) {
+                if (HasExtension(extString, "WGL_ARB_create_context_robustness")) {
+                    mHasRobustness = true;
+                }
+            } else {
+                NS_ERROR("WGL supports ARB_create_context without supplying its functions.");
+                fCreateContextAttribs = nullptr;
+            }
+        }
+
+        if (HasExtension(extString, "WGL_NV_DX_interop")) {
+            if (GLLibraryLoader::LoadSymbols(mOGLLibrary, &dxInteropSymbols[0], lookupFunc)) {
+                mHasDXInterop = true;
+                mHasDXInterop2 = HasExtension(extString, "WGL_NV_DX_interop2");
+            } else {
+                NS_ERROR("WGL supports NV_DX_interop without supplying its functions.");
+                fDXSetResourceShareHandle = nullptr;
+                fDXOpenDevice = nullptr;
+                fDXCloseDevice = nullptr;
+                fDXRegisterObject = nullptr;
+                fDXUnregisterObject = nullptr;
+                fDXObjectAccess = nullptr;
+                fDXLockObjects = nullptr;
+                fDXUnlockObjects = nullptr;
             }
         }
     }
@@ -353,6 +385,10 @@ public:
 
     virtual bool IsDoubleBuffered() {
         return mIsDoubleBuffered;
+    }
+
+    virtual WGLLibrary* GetWGLLibrary() {
+        return &sWGLLib[mLibType];
     }
 
     bool SupportsRobustness()

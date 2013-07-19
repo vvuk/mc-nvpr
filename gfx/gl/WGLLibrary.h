@@ -16,6 +16,8 @@ public:
       : mInitialized(false), 
         mOGLLibrary(nullptr),
         mHasRobustness(false), 
+        mHasDXInterop(false),
+        mHasDXInterop2(false),
         mWindow (0),
         mWindowDC(0),
         mWindowGLContext(0),
@@ -69,10 +71,45 @@ public:
     typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSPROC) (HDC hdc, HGLRC hShareContext, const int *attribList);
     PFNWGLCREATECONTEXTATTRIBSPROC fCreateContextAttribs;
 
+    // WGL_NV_DX_interop:
+    // BOOL wglDXSetResourceShareHandleNV(void *dxObject, HANDLE shareHandle);
+    typedef BOOL (WINAPI * PFNWGLDXSETRESOURCESHAREHANDLEPROC) (void* dxObject, HANDLE shareHandle);
+    PFNWGLDXSETRESOURCESHAREHANDLEPROC fDXSetResourceShareHandle;
+
+    // HANDLE wglDXOpenDeviceNV(void *dxDevice);
+    typedef HANDLE (WINAPI * PFNWGLDXOPENDEVICEPROC) (void* dxDevice);
+    PFNWGLDXOPENDEVICEPROC fDXOpenDevice;
+
+    // BOOL wglDXCloseDeviceNV(HANDLE hDevice);
+    typedef BOOL (WINAPI * PFNWGLDXCLOSEDEVICEPROC) (HANDLE hDevice);
+    PFNWGLDXCLOSEDEVICEPROC fDXCloseDevice;
+
+    // HANDLE wglDXRegisterObjectNV(HANDLE hDevice, void *dxObject, GLuint name, GLenum type, GLenum access);
+    typedef HANDLE (WINAPI * PFNWGLDXREGISTEROBJECTPROC) (HANDLE hDevice, void* dxObject, GLuint name, GLenum type, GLenum access);
+    PFNWGLDXREGISTEROBJECTPROC fDXRegisterObject;
+
+    // BOOL wglDXUnregisterObjectNV(HANDLE hDevice, HANDLE hObject);
+    typedef BOOL (WINAPI * PFNWGLDXUNREGISTEROBJECT) (HANDLE hDevice, HANDLE hObject);
+    PFNWGLDXUNREGISTEROBJECT fDXUnregisterObject;
+
+    // BOOL wglDXObjectAccessNV(HANDLE hObject, GLenum access);
+    typedef BOOL (WINAPI * PFNWGLDXOBJECTACCESSPROC) (HANDLE hObject, GLenum access);
+    PFNWGLDXOBJECTACCESSPROC fDXObjectAccess;
+
+    // BOOL wglDXLockObjectsNV(HANDLE hDevice, GLint count, HANDLE *hObjects);
+    typedef BOOL (WINAPI * PFNWGLDXLOCKOBJECTSPROC) (HANDLE hDevice, GLint count, HANDLE* hObjects);
+    PFNWGLDXLOCKOBJECTSPROC fDXLockObjects;
+
+    // BOOL wglDXUnlockObjectsNV(HANDLE hDevice, GLint count, HANDLE *hObjects);
+    typedef BOOL (WINAPI * PFNWGLDXUNLOCKOBJECTSPROC) (HANDLE hDevice, GLint count, HANDLE* hObjects);
+    PFNWGLDXUNLOCKOBJECTSPROC fDXUnlockObjects;
+
     bool EnsureInitialized(bool aUseMesaLlvmPipe);
     HWND CreateDummyWindow(HDC *aWindowDC = nullptr);
 
     bool HasRobustness() const { return mHasRobustness; }
+    bool HasDXInterop()  const { return mHasDXInterop;  }
+    bool HasDXInterop2() const { return mHasDXInterop2; }
     bool IsInitialized() const { return mInitialized; }
     HWND GetWindow() const { return mWindow; }
     HDC GetWindowDC() const {return mWindowDC; }
@@ -86,6 +123,8 @@ private:
     bool mInitialized;
     PRLibrary *mOGLLibrary;
     bool mHasRobustness;
+    bool mHasDXInterop;
+    bool mHasDXInterop2;
 
     HWND mWindow;
     HDC mWindowDC;

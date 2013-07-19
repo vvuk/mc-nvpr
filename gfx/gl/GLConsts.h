@@ -5592,9 +5592,9 @@
 // WGL
 #define LOCAL_WGL_ACCELERATION_ARB                           0x2003
 #define LOCAL_WGL_ACCELERATION_EXT                           0x2003
-#define LOCAL_WGL_ACCESS_READ_ONLY_NV                        0x00000000
-#define LOCAL_WGL_ACCESS_READ_WRITE_NV                       0x00000001
-#define LOCAL_WGL_ACCESS_WRITE_DISCARD_NV                    0x00000002
+#define LOCAL_WGL_ACCESS_READ_ONLY                           0x0000
+#define LOCAL_WGL_ACCESS_READ_WRITE                          0x0001
+#define LOCAL_WGL_ACCESS_WRITE_DISCARD                       0x0002
 #define LOCAL_WGL_ACCUM_ALPHA_BITS_ARB                       0x2021
 #define LOCAL_WGL_ACCUM_ALPHA_BITS_EXT                       0x2021
 #define LOCAL_WGL_ACCUM_BITS_ARB                             0x201D

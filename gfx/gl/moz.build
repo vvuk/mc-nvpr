@@ -59,11 +59,13 @@ if CONFIG['MOZ_X11']:
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
     EXPORTS += [
         'SharedSurfaceANGLE.h',
+        'SharedSurfaceD3D10Interop.h',
         'WGLLibrary.h',
     ]
     CPP_SOURCES += [
         'GLContextProviderEGL.cpp',
         'SharedSurfaceANGLE.cpp',
+        'SharedSurfaceD3D10Interop.cpp',
     ]
 if CONFIG['MOZ_ENABLE_SKIA_GPU']:
     EXPORTS += ['GLContextSkia.h']

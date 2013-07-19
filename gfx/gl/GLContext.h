@@ -62,6 +62,7 @@ namespace mozilla {
         class GLLibraryEGL;
         class GLScreenBuffer;
         class TextureGarbageBin;
+        class WGLLibrary;
     }
 
     namespace layers {
@@ -2442,6 +2443,7 @@ public:
 
     virtual EGLContext GetEGLContext() { return nullptr; }
     virtual GLLibraryEGL* GetLibraryEGL() { return nullptr; }
+    virtual WGLLibrary* GetWGLLibrary() { return nullptr; }
 
     virtual void MakeCurrent_EGLSurface(void* surf) {
         MOZ_CRASH("Must be called against a GLContextEGL.");
