@@ -28,6 +28,10 @@ class PlanesClip;
 class StencilClip;
 }
 
+extern "C" GFX2D_API bool DrawTargetNVprBlitToForeignTextureHelper(DrawTarget *dt,
+                                                                   void *aForeignContext,
+                                                                   GLuint aForeignTexture);
+
 class DrawTargetNVpr
   : public DrawTarget
   , public SupportsWeakPtr<DrawTargetNVpr>
@@ -169,7 +173,6 @@ private:
   void MarkChanged();
 
   const IntSize mSize;
-  const SurfaceFormat mFormat;
   GLuint mColorBuffer;
   GLuint mStencilBuffer;
   GLuint mFramebuffer;

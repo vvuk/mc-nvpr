@@ -52,7 +52,6 @@ private:
 DrawTargetNVpr::DrawTargetNVpr(const IntSize& aSize, SurfaceFormat aFormat,
                                bool& aSuccess)
   : mSize(aSize)
-  , mFormat(aFormat)
   , mColorBuffer(0)
   , mStencilBuffer(0)
   , mFramebuffer(0)
@@ -61,6 +60,7 @@ DrawTargetNVpr::DrawTargetNVpr(const IntSize& aSize, SurfaceFormat aFormat,
   , mTransformId(0)
   , mStencilClipBits(0)
 {
+  mFormat = aFormat;
   aSuccess = false;
 
   MOZ_ASSERT(mSize.width >= 0 && mSize.height >= 0);
@@ -911,6 +911,19 @@ DrawTargetNVpr::ReleaseStencilClipBits(GLubyte aBits)
   // The clip bits need to be a consecutive run of most-significant bits (in
   // other words, they need to be released in reverse order).
   MOZ_ASSERT((~mStencilClipBits & 0xff) & ((~mStencilClipBits & 0xff) - 1));
+}
+
+// helper
+bool
+DrawTargetNVprBlitToForeignTextureHelper(DrawTarget *dt,
+                                         void *aForeignContext,
+                                         GLuint aForeignTexture)
+{
+  MOZ_ASSERT(dt->GetType() == BACKEND_NVPR);
+
+  DrawTargetNVpr *nvpr = static_cast<DrawTargetNVpr*>(dt);
+  return nvpr->BlitToForeignTexture(static_cast<PlatformGLContext>(aForeignContext),
+                                    aForeignTexture);
 }
 
 }

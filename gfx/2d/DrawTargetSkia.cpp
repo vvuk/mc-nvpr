@@ -27,6 +27,8 @@
 #include "Tools.h"
 #include <algorithm>
 
+using namespace std;
+
 namespace mozilla {
 namespace gfx {
 

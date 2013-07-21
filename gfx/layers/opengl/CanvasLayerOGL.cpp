@@ -46,6 +46,10 @@ using namespace mozilla::layers;
 using namespace mozilla::gl;
 using namespace mozilla::gfx;
 
+extern "C" bool DrawTargetNVprBlitToForeignTextureHelper(DrawTarget *dt,
+                                                         void *aForeignContext,
+                                                         GLuint aForeignTexture);
+
 CanvasLayerOGL::CanvasLayerOGL(LayerManagerOGL *aManager)
   : CanvasLayer(aManager, nullptr)
   , LayerOGL(aManager)
@@ -144,7 +148,46 @@ CanvasLayerOGL::Initialize(const Data& aData)
     return;
   } else if (aData.mDrawTarget) {
     mDrawTarget = aData.mDrawTarget;
-    mCanvasSurface = gfxPlatform::GetPlatform()->CreateThebesSurfaceAliasForDrawTarget_hack(mDrawTarget);
+    // when NVPR, we can do a NV_copy_image straight into our texture
+    if (mDrawTarget->GetType() != gfx::BACKEND_NVPR) {
+      mCanvasSurface = gfxPlatform::GetPlatform()->CreateThebesSurfaceAliasForDrawTarget_hack(mDrawTarget);
+    } else {
+      // create a texture to use
+      MOZ_ASSERT(mTexture == 0);
+
+      GLenum texFormat, texInternalFormat, texType;
+      switch (mDrawTarget->GetFormat()) {
+      case FORMAT_B8G8R8A8:
+      case FORMAT_R8G8B8A8:
+        texFormat = LOCAL_GL_RGBA;
+        texInternalFormat = LOCAL_GL_RGBA8;
+        texType = LOCAL_GL_UNSIGNED_BYTE;
+        break;
+      case FORMAT_B8G8R8X8:
+      case FORMAT_R8G8B8X8:
+        texFormat = LOCAL_GL_RGBA;
+        texInternalFormat = LOCAL_GL_RGB8;
+        texType = LOCAL_GL_UNSIGNED_BYTE;
+        break;
+      case FORMAT_R5G6B5:
+        texFormat = LOCAL_GL_RGB;
+        texInternalFormat = LOCAL_GL_RGB565;
+        texType = LOCAL_GL_UNSIGNED_SHORT_5_6_5;
+        break;
+      case FORMAT_A8:
+      case FORMAT_YUV:
+      case FORMAT_UNKNOWN:
+      default:
+        // we should never get these; nvpr doesn't handle them right now
+        // as draw target formats
+        printf_stderr("!!! unknown drawtarget format (dt %p %p) format %d\n",
+                      mDrawTarget.get(), aData.mDrawTarget, mDrawTarget->GetFormat());
+        MOZ_CRASH("unhandled drawtarget format");
+      }
+
+      mTexture = gl()->CreateTexture(texInternalFormat, texFormat, texType, aData.mSize);
+      mTextureTarget = LOCAL_GL_TEXTURE_2D;
+    }
     mNeedsYFlip = false;
   } else if (aData.mSurface) {
     mCanvasSurface = aData.mSurface;
@@ -271,6 +314,10 @@ CanvasLayerOGL::UpdateSurface()
     }
 #endif
     updatedSurface = mCanvasSurface;
+  } else if (mDrawTarget && mDrawTarget->GetType() == gfx::BACKEND_NVPR) {
+    DrawTargetNVprBlitToForeignTextureHelper(mDrawTarget,
+                                             gl()->GetNativeData(GLContext::NativeGLContext),
+                                             mTexture);
   } else {
     MOZ_CRASH("Unhandled canvas layer type.");
   }
