@@ -5,6 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "DrawTargetNVpr.h"
+#include "DXTextureInteropNVpr.h"
 #include "GradientStopsNVpr.h"
 #include "Logging.h"
 #include "PathBuilderNVpr.h"
@@ -65,7 +66,7 @@ DrawTargetNVpr::DrawTargetNVpr(const IntSize& aSize, SurfaceFormat aFormat,
 
   MOZ_ASSERT(mSize.width >= 0 && mSize.height >= 0);
 
-  GL::InitializeIfNeeded();
+  InitializeGLIfNeeded();
   if (!gl->IsValid()) {
     return;
   }
@@ -181,6 +182,29 @@ DrawTargetNVpr::BlitToForeignTexture(PlatformGLContext aForeignContext,
   Snapshot();
   return gl->BlitTextureToForeignTexture(mSize, *mSnapshot,
                                          aForeignContext, aForeignTextureId);
+}
+
+TemporaryRef<DXTextureInteropNVpr>
+DrawTargetNVpr::OpenDXTextureInterop(void* aDX, void* aDXTexture)
+{
+  return DXTextureInteropNVpr::Create(aDX, aDXTexture);
+}
+
+void
+DrawTargetNVpr::BlitToDXTexture(DXTextureInteropNVpr* aDXTexture)
+{
+  GLuint dxTextureId = aDXTexture->Lock();
+
+  gl->SetFramebuffer(GL_READ_FRAMEBUFFER, mFramebuffer);
+  gl->SetFramebufferToTexture(GL_DRAW_FRAMEBUFFER, GL_TEXTURE_2D, dxTextureId);
+  gl->DisableScissorTest();
+  gl->EnableColorWrites();
+
+  gl->BlitFramebuffer(0, 0, mSize.width, mSize.height,
+                      0, 0, mSize.width, mSize.height,
+                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+  aDXTexture->Unlock();
 }
 
 void

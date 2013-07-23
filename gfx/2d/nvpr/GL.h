@@ -40,8 +40,6 @@ struct UserData {
 class GL
 {
 public:
-  static void InitializeIfNeeded();
-
   bool IsValid() const { return mIsValid; }
 
   bool IsCurrent() const;
@@ -50,6 +48,8 @@ public:
   bool BlitTextureToForeignTexture(const IntSize& aSize, GLuint aSourceTextureId,
                                    PlatformGLContext aForeignContext,
                                    GLuint aForeignTextureId);
+
+  bool BlitFramebufferToDXTexture(const IntSize& aSize, void* aDX, void* aDXTexture);
 
   enum Extension {
     EXT_direct_state_access,
@@ -154,17 +154,13 @@ public:
   }
   void DisableBlending();
 
-private:
-  struct PlatformContextData;
-
+protected:
   GL();
-  ~GL();
+  virtual ~GL();
 
-  bool InitGLContext();
-  void DestroyGLContext();
+  void Initialize();
 
-  PlatformContextData* mContextData;
-
+private:
   bool mIsValid;
   bool mSupportedExtensions[EXTENSION_COUNT];
   GLint mMaxRenderbufferSize;
@@ -301,7 +297,7 @@ private:
 public:
   FOR_ALL_PUBLIC_GL_ENTRY_POINTS(DECLARE_GL_METHOD);
 
-private:
+protected:
   FOR_ALL_PRIVATE_GL_ENTRY_POINTS(DECLARE_GL_METHOD);
 
 #undef DECLARE_GL_METHOD
@@ -311,6 +307,7 @@ private:
 };
 
 extern GL* gl;
+void InitializeGLIfNeeded();
 
 }
 }

@@ -18,6 +18,7 @@
 namespace mozilla {
 namespace gfx {
 
+class DXTextureInteropNVpr;
 class PathNVpr;
 class SourceSurfaceNVpr;
 class TextureObjectNVpr;
@@ -55,6 +56,10 @@ public:
 
   bool BlitToForeignTexture(PlatformGLContext aForeignContext,
                             GLuint aForeignTextureId);
+
+  TemporaryRef<DXTextureInteropNVpr>
+    OpenDXTextureInterop(void* aDX, void* aDXTexture);
+  void BlitToDXTexture(DXTextureInteropNVpr* aDXTexture);
 
   virtual void Flush();
 
