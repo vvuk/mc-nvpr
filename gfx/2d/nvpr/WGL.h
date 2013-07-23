@@ -71,9 +71,6 @@ private:
   HDC mDC;
   HGLRC mGLContext;
   bool mSupportedWGLExtensions[WGL_EXTENSION_COUNT];
-
-  HANDLE mDXInterop;
-  RefPtr<IUnknown> mD3DDevice;
 };
 
 }

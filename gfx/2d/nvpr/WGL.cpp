@@ -47,7 +47,6 @@ WGL::LoadProcAddress(T WGL::*aProc, const char* aName)
 }
 
 WGL::WGL()
-  : mDXInterop(nullptr)
 {
   memset(mSupportedWGLExtensions, 0, sizeof(mSupportedWGLExtensions));
 
@@ -168,10 +167,6 @@ WGL::WGL()
 WGL::~WGL()
 {
   MakeCurrent(mDC, nullptr);
-
-  if (mDXInterop) {
-    DXCloseDeviceNV(mDXInterop);
-  }
 
   if (mGLContext) {
     DeleteContext(mGLContext);
