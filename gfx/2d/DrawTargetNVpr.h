@@ -15,10 +15,13 @@
 #include <string>
 #include <stack>
 
+#ifdef WIN32
+#include "DXTextureInteropNVpr.h"
+#endif
+
 namespace mozilla {
 namespace gfx {
 
-class DXTextureInteropNVpr;
 class PathNVpr;
 class SourceSurfaceNVpr;
 class TextureObjectNVpr;
@@ -57,9 +60,11 @@ public:
   bool BlitToForeignTexture(PlatformGLContext aForeignContext,
                             GLuint aForeignTextureId);
 
-  TemporaryRef<DXTextureInteropNVpr>
-    OpenDXTextureInterop(void* aDX, void* aDXTexture);
+#ifdef WIN32
+  // get or create a DXTextureInteropNVpr
+  RefPtr<DXTextureInteropNVpr> UpdateInteropTexture(void* aDX);
   void BlitToDXTexture(DXTextureInteropNVpr* aDXTexture);
+#endif
 
   virtual void Flush();
 
@@ -193,6 +198,10 @@ private:
   nvpr::StencilClip* mPoppedStencilClips;
   nvpr::UniqueId mTransformId;
   GLubyte mStencilClipBits;
+
+#ifdef WIN32
+  RefPtr<DXTextureInteropNVpr> mDXInteropTexture;
+#endif
 };
 
 }

@@ -43,12 +43,16 @@ if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'cocoa':
         'ScaledFontMac.cpp',
     ]
 elif CONFIG['MOZ_WIDGET_TOOLKIT'] == 'windows':
+    EXPORTS.mozilla.gfx += [
+        'DXTextureInteropNVpr.h'
+    ]
     CPP_SOURCES += [
         'DrawTargetD2D.cpp',
         'SourceSurfaceD2D.cpp',
         'SourceSurfaceD2DTarget.cpp',
         'PathD2D.cpp',
         'ScaledFontDWrite.cpp',
+        'DXTextureInteropNVpr.cpp'
     ]
     if CONFIG['MOZ_ENABLE_DIRECT2D1_1']:
         CPP_SOURCES += [

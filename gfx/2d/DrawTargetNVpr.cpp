@@ -184,12 +184,7 @@ DrawTargetNVpr::BlitToForeignTexture(PlatformGLContext aForeignContext,
                                          aForeignContext, aForeignTextureId);
 }
 
-TemporaryRef<DXTextureInteropNVpr>
-DrawTargetNVpr::OpenDXTextureInterop(void* aDX, void* aDXTexture)
-{
-  return DXTextureInteropNVpr::Create(aDX, aDXTexture);
-}
-
+#ifdef WIN32
 void
 DrawTargetNVpr::BlitToDXTexture(DXTextureInteropNVpr* aDXTexture)
 {
@@ -200,12 +195,32 @@ DrawTargetNVpr::BlitToDXTexture(DXTextureInteropNVpr* aDXTexture)
   gl->DisableScissorTest();
   gl->EnableColorWrites();
 
+  gl->SetClearColor(Color(1.0, 0.0, 0.0, 1.0));
+  gl->Clear(GL_COLOR_BUFFER_BIT);
+
   gl->BlitFramebuffer(0, 0, mSize.width, mSize.height,
                       0, 0, mSize.width, mSize.height,
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
   aDXTexture->Unlock();
 }
+
+RefPtr<DXTextureInteropNVpr>
+DrawTargetNVpr::UpdateInteropTexture(void *aDX)
+{
+  if (!mDXInteropTexture || mDXInteropTexture->GetSize() != mSize) {
+    bool success = false;
+    mDXInteropTexture = new DXTextureInteropNVpr(aDX, mSize, success);
+    if (!success) {
+      mDXInteropTexture = nullptr;
+      return nullptr;
+    }
+  }
+
+  BlitToDXTexture(mDXInteropTexture);
+  return mDXInteropTexture;
+}
+#endif
 
 void
 DrawTargetNVpr::Flush()

@@ -9,6 +9,7 @@
 #include "LayerManagerD3D10.h"
 
 #include "mozilla/Preferences.h"
+#include "mozilla/gfx/DXTextureInteropNVpr.h"
 
 class gfxASurface;
 
@@ -41,6 +42,7 @@ private:
 
   nsRefPtr<gfxASurface> mSurface;
   mozilla::RefPtr<mozilla::gfx::DrawTarget> mDrawTarget;
+  mozilla::RefPtr<mozilla::gfx::DXTextureInteropNVpr> mTextureInteropNVpr;
   nsRefPtr<GLContext> mGLContext;
   nsRefPtr<ID3D10Texture2D> mTexture;
   nsRefPtr<ID3D10ShaderResourceView> mUploadSRView;

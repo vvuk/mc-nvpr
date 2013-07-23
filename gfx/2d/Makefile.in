@@ -7,7 +7,7 @@ VPATH		=  $(srcdir) $(srcdir)/unittest
 
 DEFINES += -DMOZ_GFX -DUSE_CAIRO -DGFX2D_INTERNAL
 
-DEFINES += -DUSE_NVPR -DGL_GLEXT_PROTOTYPES
+DEFINES += -DUSE_NVPR -DGL_GLEXT_PROTOTYPES -DWGL_WGLEXT_PROTOTYPES
 VPATH += $(srcdir)/nvpr
 
 ifeq ($(MOZ_WIDGET_TOOLKIT),$(findstring $(MOZ_WIDGET_TOOLKIT),android gtk2 gtk3 gonk qt))

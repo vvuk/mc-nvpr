@@ -41,6 +41,8 @@ CanvasLayerD3D10::Initialize(const Data& aData)
 {
   NS_ASSERTION(mSurface == nullptr, "BasicCanvasLayer::Initialize called twice!");
 
+  mBounds.SetRect(0, 0, aData.mSize.width, aData.mSize.height);
+
   if (aData.mSurface) {
     mSurface = aData.mSurface;
     NS_ASSERTION(!aData.mGLContext && !aData.mDrawTarget,
@@ -90,15 +92,25 @@ CanvasLayerD3D10::Initialize(const Data& aData)
       NS_ASSERTION(!aData.mGLContext && !aData.mSurface,
                    "CanvasLayer can't have both surface and WebGLContext/Surface");
 
-      mBounds.SetRect(0, 0, aData.mSize.width, aData.mSize.height);
       device()->CreateShaderResourceView(mTexture, nullptr, getter_AddRefs(mSRView));
       return;
     } 
-    
-    // XXX we should store mDrawTarget and use it directly in UpdateSurface,
-    // bypassing Thebes
-    if (mDrawTarget->GetType() != BACKEND_NVPR)
+
+    if (mDrawTarget->GetType() != BACKEND_NVPR) {
+      // XXX we should store mDrawTarget and use it directly in UpdateSurface,
+      // bypassing Thebes
       mSurface = gfxPlatform::GetPlatform()->GetThebesSurfaceForDrawTarget(mDrawTarget);
+    } else {
+      mTextureInteropNVpr = DXTextureInteropNVpr::GetForDrawTarget(device(), mDrawTarget);
+      if (mTextureInteropNVpr) {
+        mTextureInteropNVpr->GetD3DShaderResourceView()->QueryInterface(__uuidof(ID3D10ShaderResourceView),
+                                                                        getter_AddRefs(mSRView));
+        return; // all done
+      }
+
+      mTextureInteropNVpr = nullptr;
+      NS_WARNING("Failed to create texture or DXTextureInteropNVpr for NVPR D3D10 interop!");
+    }
   } else {
     NS_ERROR("CanvasLayer created without mSurface, mDrawTarget or mGLContext?");
   }
@@ -144,6 +156,25 @@ CanvasLayerD3D10::UpdateSurface()
     mDrawTarget->Flush();
   } else if (mIsD2DTexture) {
     mSurface->Flush();
+    return;
+  }
+
+  if (mTextureInteropNVpr) {
+    if (mTextureInteropNVpr->UpdateFrom(mDrawTarget)) {
+      // all done
+      return;
+    }
+
+    // need to try recreating
+    mTextureInteropNVpr = DXTextureInteropNVpr::GetForDrawTarget(device(), mDrawTarget);
+    if (mTextureInteropNVpr) {
+      mTextureInteropNVpr->GetD3DShaderResourceView()->QueryInterface(__uuidof(ID3D10ShaderResourceView),
+                                                                      getter_AddRefs(mSRView));
+      return; // all done
+    }
+
+    // otherwise, we're doomed
+    mSRView = nullptr;
     return;
   }
 
@@ -251,7 +282,7 @@ CanvasLayerD3D10::RenderLayer()
   UpdateSurface();
   FireDidTransactionCallback();
 
-  if (!mTexture)
+  if (!mSRView)
     return;
 
   nsIntRect visibleRect = mVisibleRegion.GetBounds();
@@ -267,9 +298,7 @@ CanvasLayerD3D10::RenderLayer()
                 ? SHADER_POINT : SHADER_LINEAR;
   ID3D10EffectTechnique* technique = SelectShader(shaderFlags);
 
-  if (mSRView) {
-    effect()->GetVariableByName("tRGB")->AsShaderResource()->SetResource(mSRView);
-  }
+  effect()->GetVariableByName("tRGB")->AsShaderResource()->SetResource(mSRView);
 
   effect()->GetVariableByName("vLayerQuad")->AsVector()->SetFloatVector(
     ShaderConstantRectD3D10(

@@ -7,32 +7,46 @@
 #ifndef MOZILLA_GFX_DXTEXTUREINTEROP_H_
 #define MOZILLA_GFX_DXTEXTUREINTEROP_H_
 
-#include "nvpr/GL.h"
-#include "Windows.h"
+#include "Types.h"
 #include <mozilla/RefPtr.h>
+
+#include <windows.h>
+#include <unknwn.h>
+
+typedef unsigned int GLuint;
 
 namespace mozilla {
 namespace gfx {
 
-class DXTextureInteropNVpr : public RefCounted<DXTextureInteropNVpr> {
+class DrawTarget;
+
+class GFX2D_API DXTextureInteropNVpr : public RefCounted<DXTextureInteropNVpr> {
 public:
-  static TemporaryRef<DXTextureInteropNVpr> Create(void* aDX, void* aDXTexture)
-  {
-    bool success;
-    RefPtr<DXTextureInteropNVpr> interop
-      = new DXTextureInteropNVpr(aDX, aDXTexture, success);
-    return success ? interop.forget() : nullptr;
-  }
+  // Creates or updates as needed.  Note that this assumes that there will only
+  // be one D3D device in use!
+  static RefPtr<DXTextureInteropNVpr> GetForDrawTarget(void* aDX, DrawTarget* aForDrawTarget);
+
   ~DXTextureInteropNVpr();
 
   GLuint Lock();
   void Unlock();
 
+  const IntSize& GetSize() { return mSize; }
+  IUnknown* GetD3DTexture() { return mTextureD3D; }
+  IUnknown* GetD3DShaderResourceView() { return mShaderResourceViewD3D; }
+
+  bool UpdateFrom(DrawTarget* aDT);
 private:
-  DXTextureInteropNVpr(void* aDX, void* aDXTexture, bool& aSuccess);
+  friend class DrawTargetNVpr;
+
+  DXTextureInteropNVpr(void* aDX, const IntSize& aSize, bool& aSuccess);
+
   HANDLE mDXInterop;
-  GLuint mTextureId;
   HANDLE mTextureInterop;
+  GLuint mTextureId;
+  IntSize mSize;
+  RefPtr<IUnknown> mTextureD3D;
+  RefPtr<IUnknown> mShaderResourceViewD3D;
 };
 
 }

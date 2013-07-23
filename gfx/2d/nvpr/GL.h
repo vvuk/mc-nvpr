@@ -49,6 +49,8 @@ public:
                                    PlatformGLContext aForeignContext,
                                    GLuint aForeignTextureId);
 
+  // Accepts any DirectX device (D3D9 [non-WDDM only], D3D9Ex, D3D10, D3D11).  aDXTexture must
+  // be a valid 2D non-mipmapped texture for that API.
   bool BlitFramebufferToDXTexture(const IntSize& aSize, void* aDX, void* aDXTexture);
 
   enum Extension {

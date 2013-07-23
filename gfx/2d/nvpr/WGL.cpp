@@ -47,6 +47,7 @@ WGL::LoadProcAddress(T WGL::*aProc, const char* aName)
 }
 
 WGL::WGL()
+  : mDXInterop(nullptr)
 {
   memset(mSupportedWGLExtensions, 0, sizeof(mSupportedWGLExtensions));
 
@@ -141,9 +142,10 @@ WGL::WGL()
       if (LoadProcAddress(&WGL::DXOpenDeviceNV, "wglDXOpenDeviceNV")
           && LoadProcAddress(&WGL::DXCloseDeviceNV, "wglDXCloseDeviceNV")
           && LoadProcAddress(&WGL::DXRegisterObjectNV, "wglDXRegisterObjectNV")
-          && LoadProcAddress(&WGL::DXUnregisterObjectNV, "wglDXUnegisterObjectNV")
+          && LoadProcAddress(&WGL::DXUnregisterObjectNV, "wglDXUnregisterObjectNV")
           && LoadProcAddress(&WGL::DXLockObjectsNV, "wglDXLockObjectsNV")
-          && LoadProcAddress(&WGL::DXUnlockObjectsNV, "wglDXUnlockObjectsNV")) {
+          && LoadProcAddress(&WGL::DXUnlockObjectsNV, "wglDXUnlockObjectsNV")
+          && LoadProcAddress(&WGL::DXSetResourceShareHandleNV, "wglDXSetResourceShareHandleNV")) {
         mSupportedWGLExtensions[NV_DX_interop2] = true;
       }
       continue;
@@ -166,6 +168,10 @@ WGL::WGL()
 WGL::~WGL()
 {
   MakeCurrent(mDC, nullptr);
+
+  if (mDXInterop) {
+    DXCloseDeviceNV(mDXInterop);
+  }
 
   if (mGLContext) {
     DeleteContext(mGLContext);

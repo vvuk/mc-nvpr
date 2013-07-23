@@ -8,8 +8,11 @@
 #define MOZILLA_GFX_NVPR_WGL_H_
 
 #include "GL.h"
-#include <Windows.h>
 #include "GL/wglext.h"
+
+#include <windows.h>
+// for IUnknown
+#include <unknwn.h>
 
 namespace mozilla {
 namespace gfx {
@@ -48,6 +51,7 @@ public:
   MACRO(DXOpenDeviceNV) \
   MACRO(DXCloseDeviceNV) \
   MACRO(DXRegisterObjectNV) \
+  MACRO(DXSetResourceShareHandleNV) \
   MACRO(DXUnregisterObjectNV) \
   MACRO(DXLockObjectsNV) \
   MACRO(DXUnlockObjectsNV)
@@ -67,6 +71,9 @@ private:
   HDC mDC;
   HGLRC mGLContext;
   bool mSupportedWGLExtensions[WGL_EXTENSION_COUNT];
+
+  HANDLE mDXInterop;
+  RefPtr<IUnknown> mD3DDevice;
 };
 
 }
