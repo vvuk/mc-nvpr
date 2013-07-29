@@ -312,7 +312,7 @@ PathBuilderSequenceNVpr::PathBuilderSequenceNVpr(FillRule aFillRule,
                                                  GLuint aFirstPath,
                                                  GLuint aNumPaths)
   : PathBuilderNVpr(aFillRule),
-    mCurPath(0),
+    mCurPath(aFirstPath),
     mFirstPath(aFirstPath),
     mNumPaths(aNumPaths)
 {

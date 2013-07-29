@@ -512,7 +512,7 @@ DrawTargetNVpr::FillGlyphs(ScaledFont* aFont,
 
     for (size_t i = 0; i < aBuffer.mNumGlyphs; i++) {
       // glyph index 1 is at path position 0
-      characters[i] = aBuffer.mGlyphs[i].mIndex - 1;
+      characters[i] = aBuffer.mGlyphs[i].mIndex;
       positions[i].x = aBuffer.mGlyphs[i].mPosition.x * font->InverseSize();
       positions[i].y = aBuffer.mGlyphs[i].mPosition.y * font->InverseSize();
     }
