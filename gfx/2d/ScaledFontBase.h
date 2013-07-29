@@ -25,6 +25,8 @@ class gfxFont;
 namespace mozilla {
 namespace gfx {
 
+class PathRecording;
+
 class ScaledFontBase : public ScaledFont
 {
 public:
@@ -35,7 +37,16 @@ public:
 
   virtual void CopyGlyphsToBuilder(const GlyphBuffer &aBuffer, PathBuilder *aBuilder, const Matrix *aTransformHint);
 
+  virtual bool CopyGlyphToBuilder(uint32_t aGlyphIndex, float aSize, PathBuilder *aBuilder) {
+    return false;
+  }
+
+  virtual uint32_t GetGlyphCount() { return 0; }
+
   float GetSize() { return mSize; }
+
+  void SetFontOptions(const FontOptions& aOptions) { mFontOptions = aOptions; }
+  const FontOptions& GetFontOptions() const { return mFontOptions; }
 
 #ifdef USE_SKIA
   virtual SkTypeface* GetSkTypeface() { return mTypeface; }
@@ -58,6 +69,7 @@ protected:
   cairo_scaled_font_t* mScaledFont;
 #endif
   Float mSize;
+  FontOptions mFontOptions;
 };
 
 }

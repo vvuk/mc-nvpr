@@ -12,6 +12,7 @@
 #include "PathNVpr.h"
 #include "ScaledFontNVpr.h"
 #include "SourceSurfaceNVpr.h"
+#include "ScaledFontBase.h"
 #include "nvpr/Clip.h"
 #include <sstream>
 #include <vector>
@@ -474,25 +475,35 @@ DrawTargetNVpr::FillGlyphs(ScaledFont* aFont,
                            const DrawOptions& aOptions,
                            const GlyphRenderingOptions* aRenderOptions)
 {
-  return;
-
-  MOZ_ASSERT(aFont->GetType() == FONT_NVPR);
+  RefPtr<ScaledFontNVpr> holder;
 
   if (!aBuffer.mNumGlyphs) {
     return;
   }
 
-  const ScaledFontNVpr* const font = static_cast<const ScaledFontNVpr*>(aFont);
-
   gl->MakeCurrent();
 
   Validate();
+
+  const ScaledFontNVpr* font;
+
+  if (aFont->GetType() != FONT_NVPR) {
+    ScaledFontBase *baseFont = (ScaledFontBase*) aFont;
+    FontOptions opts = baseFont->GetFontOptions();
+    holder = ScaledFontNVpr::Create(&opts, baseFont->GetSize(), baseFont);
+    if (!holder)
+      return;
+
+    font = holder.get();
+  } else {
+    font = static_cast<const ScaledFontNVpr*>(aFont);
+  }
 
   const GLubyte countingMask = (~mStencilClipBits & 0xff);
 
   {
     Matrix transform = GetTransform();
-    transform.Scale(font->Size(), -font->Size());
+    transform.Scale(font->Size(), font->Size());
     GL::ScopedPushTransform pushTransform(gl, transform);
 
     struct Position {GLfloat x, y;};
@@ -500,10 +511,10 @@ DrawTargetNVpr::FillGlyphs(ScaledFont* aFont,
     vector<Position> positions(aBuffer.mNumGlyphs);
 
     for (size_t i = 0; i < aBuffer.mNumGlyphs; i++) {
-      // TODO: How can we know the real mapping index -> unicode?
-      characters[i] = aBuffer.mGlyphs[i].mIndex + 29;
+      // glyph index 1 is at path position 0
+      characters[i] = aBuffer.mGlyphs[i].mIndex - 1;
       positions[i].x = aBuffer.mGlyphs[i].mPosition.x * font->InverseSize();
-      positions[i].y = aBuffer.mGlyphs[i].mPosition.y * -font->InverseSize();
+      positions[i].y = aBuffer.mGlyphs[i].mPosition.y * font->InverseSize();
     }
 
     gl->ConfigurePathStencilTest(mStencilClipBits);

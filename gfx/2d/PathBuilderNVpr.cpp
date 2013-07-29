@@ -170,9 +170,9 @@ PathBuilderNVpr::Arc(const Point& aOrigin, Float aRadius, Float aStartAngle,
                        aOrigin.y + sin(aEndAngle) * aRadius);
 
   if (aAntiClockwise && aEndAngle < aStartAngle) {
-    aEndAngle += 2 * M_PI;
+    aEndAngle += (float)(2 * M_PI);
   } else if (!aAntiClockwise && aEndAngle > aStartAngle) {
-    aEndAngle -= 2 * M_PI;
+    aEndAngle -= (float)(2 * M_PI);
   }
 
   // 'Anticlockwise' in HTML5 seems to be relative to a downward-pointing Y-axis,
@@ -306,6 +306,42 @@ PathDescriptionNVpr::operator <(const PathDescriptionNVpr& aOther) const
 
   // The path descriptions equal.
   return false;
+}
+
+PathBuilderSequenceNVpr::PathBuilderSequenceNVpr(FillRule aFillRule,
+                                                 GLuint aFirstPath,
+                                                 GLuint aNumPaths)
+  : PathBuilderNVpr(aFillRule),
+    mCurPath(0),
+    mFirstPath(aFirstPath),
+    mNumPaths(aNumPaths)
+{
+}
+
+bool
+PathBuilderSequenceNVpr::NextPath()
+{
+  MOZ_ASSERT(mCurPath < mFirstPath + mNumPaths);
+
+  // XXX do we need to handle mIsPolygon?
+
+  gl->MakeCurrent();
+  gl->PathCommandsNV(mCurPath,
+                     mDescription.mCommands.size(),
+                     mDescription.mCommands.data(),
+                     mDescription.mCoords.size(),
+                     GL_FLOAT,
+                     mDescription.mCoords.data());
+
+  mDescription.Clear();
+  mIsPolygon = true;
+
+  mCurPath++;
+
+  if (mCurPath == mFirstPath + mNumPaths)
+    return false;
+
+  return true;
 }
 
 }

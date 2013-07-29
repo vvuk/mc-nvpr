@@ -721,6 +721,19 @@ gfxWindowsPlatform::CreateOffscreenImageSurface(const gfxIntSize& aSize,
 TemporaryRef<ScaledFont>
 gfxWindowsPlatform::GetScaledFontForFont(DrawTarget* aTarget, gfxFont *aFont)
 {
+    FontOptions fopts;
+
+    NS_LossyConvertUTF16toASCII stupidAsciiName(aFont->GetName());
+    fopts.mName = std::string(stupidAsciiName.BeginReading());
+    if (aFont->GetStyle()->ComputeWeight() >= 6) {
+        fopts.mStyle = FONT_STYLE_BOLD;
+    } else {
+        fopts.mStyle = FONT_STYLE_NORMAL;
+    }
+    if ((aFont->GetStyle()->style & (NS_FONT_STYLE_ITALIC | NS_FONT_STYLE_OBLIQUE)) != 0) {
+        fopts.mStyle = fopts.mStyle == FONT_STYLE_BOLD ? FONT_STYLE_BOLD_ITALIC : FONT_STYLE_ITALIC;
+    }
+
     if (aFont->GetType() == gfxFont::FONT_TYPE_DWRITE) {
         gfxDWriteFont *font = static_cast<gfxDWriteFont*>(aFont);
 
@@ -735,7 +748,8 @@ gfxWindowsPlatform::GetScaledFontForFont(DrawTarget* aTarget, gfxFont *aFont)
         }
 
         return Factory::CreateScaledFontForNativeFont(nativeFont,
-                                                      font->GetAdjustedSize());
+                                                      font->GetAdjustedSize(),
+                                                      fopts);
     }
 
     NS_ASSERTION(aFont->GetType() == gfxFont::FONT_TYPE_GDI,
@@ -753,7 +767,7 @@ gfxWindowsPlatform::GetScaledFontForFont(DrawTarget* aTarget, gfxFont *aFont)
                                                 aFont->GetCairoScaledFont());
     }
 
-    return Factory::CreateScaledFontForNativeFont(nativeFont, aFont->GetAdjustedSize());
+    return Factory::CreateScaledFontForNativeFont(nativeFont, aFont->GetAdjustedSize(), fopts);
 }
 
 already_AddRefed<gfxASurface>

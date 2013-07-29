@@ -308,37 +308,46 @@ Factory::CreateDrawTargetForData(BackendType aBackend,
 }
 
 TemporaryRef<ScaledFont>
-Factory::CreateScaledFontForNativeFont(const NativeFont &aNativeFont, Float aSize)
+Factory::CreateScaledFontForNativeFont(const NativeFont &aNativeFont, Float aSize, const FontOptions& aInfo)
 {
+  RefPtr<ScaledFont> f;
+
   switch (aNativeFont.mType) {
 #ifdef WIN32
   case NATIVE_FONT_DWRITE_FONT_FACE:
     {
-      return new ScaledFontDWrite(static_cast<IDWriteFontFace*>(aNativeFont.mFont), aSize);
+      f = new ScaledFontDWrite(static_cast<IDWriteFontFace*>(aNativeFont.mFont), aSize);
+      break;
     }
 #if defined(USE_CAIRO) || defined(USE_SKIA)
   case NATIVE_FONT_GDI_FONT_FACE:
     {
-      return new ScaledFontWin(static_cast<LOGFONT*>(aNativeFont.mFont), aSize);
+      f = new ScaledFontWin(static_cast<LOGFONT*>(aNativeFont.mFont), aSize);
+      break;
     }
 #endif
 #endif
 #ifdef XP_MACOSX
   case NATIVE_FONT_MAC_FONT_FACE:
     {
-      return new ScaledFontMac(static_cast<CGFontRef>(aNativeFont.mFont), aSize);
+      f = new ScaledFontMac(static_cast<CGFontRef>(aNativeFont.mFont), aSize);
+      break;
     }
 #endif
 #if defined(USE_CAIRO) || defined(USE_SKIA_FREETYPE)
   case NATIVE_FONT_CAIRO_FONT_FACE:
     {
-      return new ScaledFontCairo(static_cast<cairo_scaled_font_t*>(aNativeFont.mFont), aSize);
+      f = new ScaledFontCairo(static_cast<cairo_scaled_font_t*>(aNativeFont.mFont), aSize);
+      break;
     }
 #endif
   default:
     gfxWarning() << "Invalid native font type specified.";
     return nullptr;
   }
+
+  ((ScaledFontBase*)f.get())->SetFontOptions(aInfo);
+  return f.forget();
 }
 
 TemporaryRef<ScaledFont>

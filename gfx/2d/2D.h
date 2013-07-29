@@ -933,7 +933,7 @@ public:
     CreateDrawTargetForData(BackendType aBackend, unsigned char* aData, const IntSize &aSize, int32_t aStride, SurfaceFormat aFormat);
 
   static TemporaryRef<ScaledFont>
-    CreateScaledFontForNativeFont(const NativeFont &aNativeFont, Float aSize);
+    CreateScaledFontForNativeFont(const NativeFont &aNativeFont, Float aSize, const FontOptions& aInfo = FontOptions());
 
   /**
    * This creates a ScaledFont from TrueType data.

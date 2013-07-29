@@ -81,7 +81,7 @@ public:
 
   virtual TemporaryRef<Path> Finish();
 
-private:
+protected:
   void MakeWritable();
   nvpr::PathCache& PathCache() const;
 
@@ -91,6 +91,20 @@ private:
   Point mStartPoint;
   Point mCurrentPoint;
   bool mIsPolygon;
+};
+
+class PathBuilderSequenceNVpr : public PathBuilderNVpr
+{
+public:
+  PathBuilderSequenceNVpr(FillRule aFillRule,
+                          GLuint aFirstPath,
+                          GLuint aNumPaths);
+
+  bool NextPath();
+protected:
+  GLuint mFirstPath;
+  GLuint mNumPaths;
+  GLuint mCurPath;
 };
 
 }

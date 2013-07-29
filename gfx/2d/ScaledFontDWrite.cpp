@@ -427,5 +427,128 @@ ScaledFontDWrite::GetDefaultAAMode()
   return defaultMode;
 }
 
+class PathBuilderD2DGeometrySinkAdapter : public ID2D1GeometrySink
+{
+public:
+  PathBuilderD2DGeometrySinkAdapter() { }
+
+  void SetTargetBuilder(PathBuilder* aTargetBuilder)
+  {
+    mBuilder = aTargetBuilder;
+  }
+
+  // IUnknown interface
+  IFACEMETHOD(QueryInterface)(IID const& iid, OUT void** ppObject)
+  {
+#define IMPLEMENT_INTERFACE(iface)                 \
+    do if (iid == __uuidof(iface)) {               \
+        *ppObject = static_cast<iface*>(this);     \
+        return S_OK;                               \
+      } while(0)
+
+    IMPLEMENT_INTERFACE(ID2D1SimplifiedGeometrySink);
+    IMPLEMENT_INTERFACE(ID2D1GeometrySink);
+    IMPLEMENT_INTERFACE(IUnknown);
+
+    return E_NOINTERFACE;
+  }
+
+  STDMETHOD_(ULONG, AddRef)(THIS) { return 1; }
+  STDMETHOD_(ULONG, Release)(THIS) { return 1; }
+
+  // ID2D1SimplifiedGeometrySink
+
+  STDMETHOD_(void, AddBeziers)(const D2D1_BEZIER_SEGMENT *beziers, UINT beziersCount) {
+    for (UINT i = 0; i < beziersCount; ++i) {
+      mBuilder->BezierTo(Point(beziers[i].point1.x, beziers[i].point1.y),
+                         Point(beziers[i].point2.x, beziers[i].point2.y),
+                         Point(beziers[i].point3.x, beziers[i].point3.y));
+    }
+  }
+
+  STDMETHOD_(void, AddLines)(const D2D1_POINT_2F *points, UINT pointsCount) {
+    for (UINT i = 0; i < pointsCount; ++i) {
+      mBuilder->LineTo(Point(points[i].x, points[i].y));
+    }
+  }
+
+  STDMETHOD_(void, BeginFigure)(D2D1_POINT_2F startPoint, D2D1_FIGURE_BEGIN figureBegin) {
+    mBuilder->MoveTo(Point(startPoint.x, startPoint.y));
+  }
+
+  STDMETHOD_(void, EndFigure)(D2D1_FIGURE_END figureEnd) {
+    if (figureEnd == D2D1_FIGURE_END_CLOSED)
+      mBuilder->Close();
+  }
+
+  STDMETHOD_(void, SetFillMode)(D2D1_FILL_MODE fillMode) {
+    // let's hope noone calls this!
+    if (fillMode != 1)
+      gfxWarning() << "SetFillMode: " << static_cast<uint32_t>(fillMode) << "\n";
+  }
+
+  STDMETHOD_(void, SetSegmentFlags)(D2D1_PATH_SEGMENT vertexFlags) {
+    // let's hope noone calls this!
+  }
+
+  STDMETHOD(Close)() {
+    return S_OK;
+  }
+
+  // ID2D1GeometrySink
+
+  STDMETHOD_(void, AddLine)(D2D1_POINT_2F point) {
+    AddLines(&point, 1);
+  }
+
+  STDMETHOD_(void, AddBezier)(const D2D1_BEZIER_SEGMENT *bezier) {
+    AddBeziers(bezier, 1);
+  }
+    
+  STDMETHOD_(void, AddQuadraticBezier)(const D2D1_QUADRATIC_BEZIER_SEGMENT *bezier) {
+    AddQuadraticBeziers(bezier, 1);
+  }
+    
+  STDMETHOD_(void, AddQuadraticBeziers)(const D2D1_QUADRATIC_BEZIER_SEGMENT *beziers, UINT32 beziersCount) {
+    for (UINT i = 0; i < beziersCount; ++i) {
+      mBuilder->QuadraticBezierTo(Point(beziers[i].point1.x, beziers[i].point1.y),
+                                  Point(beziers[i].point2.x, beziers[i].point2.y));
+    }
+  }
+    
+  STDMETHOD_(void, AddArc)(const D2D1_ARC_SEGMENT *arc) {
+    // let's hope noone calls this, I don't want to implement it
+    gfxWarning() << "PathBuilderD2DGeometrySinkAdapter\n";
+  }
+
+protected:
+  RefPtr<PathBuilder> mBuilder;
+};
+
+bool
+ScaledFontDWrite::CopyGlyphToBuilder(uint32_t aGlyphIndex, float aSize, PathBuilder *aBuilder)
+{
+  static PathBuilderD2DGeometrySinkAdapter adapter;
+
+  adapter.SetTargetBuilder(aBuilder);
+
+  UINT16 index = static_cast<UINT16>(aGlyphIndex);
+
+  HRESULT hr = mFontFace->GetGlyphRunOutline(aSize, &index, nullptr, nullptr, 1, FALSE, FALSE,
+                                             &adapter);
+  adapter.SetTargetBuilder(nullptr);
+
+  if (FAILED(hr))
+    return false;
+
+  return true;
+}
+
+uint32_t
+ScaledFontDWrite::GetGlyphCount()
+{
+  return mFontFace->GetGlyphCount();
+}
+
 }
 }

@@ -30,6 +30,9 @@ public:
 
   void CopyGlyphsToSink(const GlyphBuffer &aBuffer, ID2D1GeometrySink *aSink);
 
+  virtual bool CopyGlyphToBuilder(uint32_t aGlyphIndex, float aSize, PathBuilder *aBuilder);
+  virtual uint32_t GetGlyphCount();
+
   virtual bool GetFontFileData(FontFileDataOutput aDataCallback, void *aBaton);
 
   virtual AntialiasMode GetDefaultAAMode();

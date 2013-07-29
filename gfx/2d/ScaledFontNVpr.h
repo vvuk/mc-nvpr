@@ -16,12 +16,13 @@ namespace gfx {
 
 class FontCacheNVpr;
 class FontNVpr;
+class ScaledFontBase;
 
 class FontNVpr : public RefCounted<FontNVpr> {
 public:
-  static TemporaryRef<FontNVpr> Create(const FontOptions* aFont)
+  static TemporaryRef<FontNVpr> Create(const FontOptions* aFont, ScaledFontBase* aForeignFont = nullptr)
   {
-    return new FontNVpr(aFont);
+    return new FontNVpr(aFont, aForeignFont);
   }
 
   ~FontNVpr();
@@ -30,16 +31,21 @@ public:
   operator GLuint() const { return mGlyphPaths; }
 
 private:
-  FontNVpr(const FontOptions* aFont);
+  FontNVpr(const FontOptions* aFont, ScaledFontBase* aForeignFont);
+
+  bool InitFromForeignFont(ScaledFontBase* aForeignFont);
 
   GLuint mGlyphPaths;
+  uint32_t mNumGlyphs;
   Rect mGlyphsBoundingBox;
+  RefPtr<ScaledFontBase> mBaseFont;
 };
 
 
 class ScaledFontNVpr : public ScaledFont {
 public:
-  static TemporaryRef<ScaledFontNVpr> Create(const FontOptions* aFont, GLfloat aSize);
+  static TemporaryRef<ScaledFontNVpr> Create(const FontOptions* aFont, GLfloat aSize,
+                                             ScaledFontBase* aForeignFont = nullptr);
 
   static TemporaryRef<ScaledFontNVpr> Create(const uint8_t* aData, uint32_t aFileSize,
                                              uint32_t aIndex, GLfloat aSize);

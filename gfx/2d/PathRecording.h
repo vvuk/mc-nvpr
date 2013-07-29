@@ -71,6 +71,8 @@ public:
 
   virtual TemporaryRef<Path> Finish();
 
+  const std::vector<PathOp> GetOps() const { return mPathOps; }
+
 private:
   friend class PathRecording;
 
