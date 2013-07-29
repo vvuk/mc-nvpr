@@ -34,6 +34,7 @@ private:
   FontNVpr(const FontOptions* aFont, ScaledFontBase* aForeignFont);
 
   bool InitFromForeignFont(ScaledFontBase* aForeignFont);
+  void InitFromSystemFont(const FontOptions* aFont);
 
   GLuint mGlyphPaths;
   uint32_t mNumGlyphs;
