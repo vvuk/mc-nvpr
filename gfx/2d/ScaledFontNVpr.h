@@ -65,7 +65,8 @@ public:
   }
 
   virtual void CopyGlyphsToBuilder(const GlyphBuffer &aBuffer,
-                                   PathBuilder *aBuilder)
+                                   PathBuilder *aBuilder,
+                                   const Matrix*)
   {}
 
 private:

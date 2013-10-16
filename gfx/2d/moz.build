@@ -90,10 +90,9 @@ CPP_SOURCES += [
     'PathNVpr.cpp',
     'ScaledFontNVpr.cpp',
     'SourceSurfaceNVpr.cpp',
-    # these are in nvpr/ -- we VPATH them in
-    'Clip.cpp',
-    'GL.cpp',
-    'WGL.cpp',
+    'nvpr/Clip.cpp',
+    'nvpr/GL.cpp',
+    'nvpr/WGL.cpp',
 ]
 
 CPP_SOURCES += [
